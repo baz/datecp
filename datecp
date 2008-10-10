@@ -1,0 +1,73 @@
+#! /usr/bin/env ruby
+# Utility to make a copy of a file and append a datestamp to it.  Generates a
+# unique datestamp each time by examining existing files in the directory for
+# clashes and if found, will further incrementally append the hour, then the
+# minutes, and then the seconds to the filename, i.e. filename_20070818_105535
+#
+# by Basil Shkara, 20070818
+# basil at oiledmachine dot com
+
+class Datecp
+  
+  require 'find'
+  require 'ftools'
+  
+  def initialize
+    if $*[0] == nil
+      puts instructions('no_args')
+    elsif $*.length > 1
+      puts instructions('more_args')
+    else
+      parseCurrentDirectory
+    end
+  end
+  
+  def instructions(args)
+    case args
+      when 'no_args'
+        puts "Please provide a filename"
+        exit
+      when 'more_args'
+        puts "Too many arguments\n Please provide a filename"
+        exit
+    end
+  end
+
+  def parseCurrentDirectory
+    ds = Time.new
+    seconds_ds = '_' + ds.strftime('%Y%m%d_%H%M%S')
+    minutes_ds = '_' + ds.strftime('%Y%m%d_%H%M')
+    hour_ds = '_' + ds.strftime('%Y%m%d_%H')
+    regular_ds = '_' + ds.strftime('%Y%m%d')    
+    Find.find(ENV['PWD']) do |path|
+      if FileTest.exists?($*[0] + seconds_ds)
+        cpAppendDatestamp(seconds_ds)
+        exit
+      elsif FileTest.exists?($*[0] + minutes_ds)
+        cpAppendDatestamp(seconds_ds)
+        exit
+      elsif FileTest.exists?($*[0] + hour_ds)
+        cpAppendDatestamp(minutes_ds)
+        exit
+      elsif FileTest.exists?($*[0] + regular_ds)
+        cpAppendDatestamp(hour_ds)
+        exit
+      elsif FileTest.exists?($*[0])
+        cpAppendDatestamp(regular_ds)
+        exit
+      end
+    end
+  end
+
+  def cpAppendDatestamp(datestamp)
+    if FileTest.directory?($*[0])
+      puts "datecp cannot be used for directories"
+      exit
+    else
+      File.copy($*[0], $*[0] + datestamp, true)
+    end
+  end
+  
+end
+
+datecp = Datecp.new
